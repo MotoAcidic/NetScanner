@@ -1,50 +1,65 @@
-"""Network Scanner Main Entry Point"""
+"""Network Scanner - Runs Python API and Node.js UI Server"""
 import os
 import sys
-import io
-import logging
-
-# Set up logging
-logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-
-# Fix encoding issues on Windows
-if sys.platform == 'win32':
-    os.environ['PYTHONIOENCODING'] = 'utf-8'
-    # Force UTF-8 for stdout/stderr
-    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
-    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
-
-import webbrowser
-from threading import Thread
+import subprocess
 import time
 
-# Set up paths
 app_dir = os.path.dirname(os.path.abspath(__file__))
 os.chdir(app_dir)
 sys.path.insert(0, app_dir)
 
-from app.web_ui import create_app
+print("\n" + "="*60)
+print("  NETSCANNER - Network Discovery Tool")
+print("="*60 + "\n")
 
-def start_browser():
-    """Open browser after a short delay to ensure server is running"""
-    time.sleep(2)
-    webbrowser.open('http://localhost:5000')
+# Start Python API server
+print("[1/2] Starting Python API server...")
+try:
+    from app.web_ui import create_app
+    from threading import Thread
+    from waitress import serve
 
-def main():
-    """Main entry point"""
     app = create_app()
-    app.logger.setLevel(logging.DEBUG)
+    app.logger.disabled = True
 
-    print("Network Scanner starting on http://localhost:5000")
-    # Note: Auto-opening browser disabled due to environment issues
-    # Open manually at http://localhost:5000
+    def run_api():
+        serve(app, host='localhost', port=5000, _quiet=True)
 
-    try:
-        from waitress import serve
-        serve(app, host='localhost', port=5000)
-    except ImportError:
-        print("Waitress not available, using Flask development server")
-        app.run(host='localhost', port=5000, debug=False)
+    api_thread = Thread(target=run_api, daemon=True)
+    api_thread.start()
+    time.sleep(1)
+    print("      [OK] API running on http://localhost:5000\n")
+except Exception as e:
+    print(f"      [ERROR] {e}\n")
+    sys.exit(1)
 
-if __name__ == '__main__':
-    main()
+# Start Node.js UI server
+print("[2/2] Starting Node.js UI server...")
+try:
+    ui_process = subprocess.Popen(
+        ['node', os.path.join(app_dir, 'ui-server.js')],
+        cwd=app_dir
+    )
+    time.sleep(2)
+    print("      [OK] UI running on http://localhost:3000\n")
+except FileNotFoundError:
+    print("      [ERROR] Node.js not found!")
+    print("      Please install Node.js from https://nodejs.org/\n")
+    sys.exit(1)
+
+print("="*60)
+print("  NetScanner is running!")
+print("="*60)
+print("\n  Open your browser: http://localhost:3000")
+print("  API endpoint:      http://localhost:5000")
+print("\n  Press Ctrl+C to stop\n")
+
+try:
+    while True:
+        time.sleep(1)
+except KeyboardInterrupt:
+    print("\n\nShutting down...")
+    ui_process.terminate()
+    ui_process.wait()
+    print("Done!\n")
+    sys.exit(0)
