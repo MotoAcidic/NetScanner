@@ -11,34 +11,28 @@ A lightweight, portable network scanning tool for discovering switches and mappi
 - **Real-time updates**: Live scan progress with detailed logging
 - **Secure credentials**: Encrypted credential storage (local only)
 - **Portable**: Single .exe file - just drop it in ScreenConnect and run
-- **Cross-platform**: Works on Windows and Linux
+- **Cross-platform**: Works on Windows and Linux (or build for Linux)
 - **Web UI**: Clean, intuitive browser-based interface
 
-## Quick Start
+## Quick Start (Windows .exe)
+
+1. **Download** `NetScanner.exe` from the dist folder
+2. **Double-click** the .exe (web UI opens automatically at http://localhost:5000)
+3. **Enter network subnets** (e.g., `192.168.1.0/24, 10.0.0.0/24`)
+4. **Add credentials** (optional but recommended):
+   - **UniFi**: Controller IP + admin username/password
+   - **Aruba/HP**: SSH username/password (same credentials used for all)
+5. **Click "Start Scan"**
+6. **Review results**: Network map shows switches, table shows device details
+
+## Building from Source
 
 ### Prerequisites
-- Windows or Linux
-- Ability to reach switches on network (SSH or SNMP)
-- Switch credentials (optional, but recommended for detailed data)
-
-### Usage
-
-1. **Download the .exe** from releases
-2. **Double-click** to start (web UI opens automatically)
-3. **Enter network subnets** (e.g., `192.168.1.0/24`)
-4. **Add credentials** (optional):
-   - UniFi Controller IP + username/password
-   - Aruba/HP SSH username/password
-5. **Click "Start Scan"**
-6. **Review results** in the network map and device table
-
-### Building from Source
-
-**Requirements:**
 - Python 3.8+
 - pip
+- Git
 
-**Setup:**
+### Setup
 
 ```bash
 # Clone repo
@@ -56,71 +50,171 @@ pip install -r requirements.txt
 python main.py
 ```
 
-**Build standalone .exe:**
+### Build Standalone .exe
 
 ```bash
+# Install PyInstaller
 pip install pyinstaller
+
+# Build the executable
 pyinstaller build.spec
-# .exe will be in dist/NetScanner.exe
+
+# Output: dist/NetScanner.exe (ready to deploy)
 ```
+
+## Deploying to ScreenConnect
+
+1. **Build the .exe** (see "Build Standalone .exe" above)
+2. **Upload to ScreenConnect**:
+   - Toolbox → Files → Upload `NetScanner.exe`
+   - Or store in a shared network folder
+3. **Launch from ScreenConnect**:
+   - Execute the .exe during a client session
+   - Browser opens automatically with the web UI
 
 ## Supported Switches
 
-- **UniFi**: Requires UniFi Controller access (API)
-- **Aruba**: SSH or SNMP access
-- **HP/HPE**: SSH or SNMP access
+### UniFi
+- **Requirements**: Controller must be accessible (same network or VPN)
+- **Access**: API via controller (port 8443)
+- **Credentials**: UniFi admin account
+
+### Aruba
+- **Requirements**: SSH enabled on switches
+- **Access**: SSH (port 22)
+- **Credentials**: Admin account with CLI access
+- **Fallback**: Reads config if SNMP not enabled
+
+### HP/HPE
+- **Requirements**: SSH enabled on switches
+- **Access**: SSH (port 22)
+- **Credentials**: Admin account with CLI access
+- **Fallback**: Reads config if SNMP not enabled
 
 ## Security Notes
 
-- Credentials are encrypted locally using `cryptography` library
-- No telemetry or data sent externally
-- All scanning happens on your machine
-- Safe for medical/HIPAA environments
-- ScreenConnect integration = no permanent installation
+- **Encrypted storage**: Credentials saved locally with AES-256 encryption
+- **No telemetry**: All scanning happens on your machine, nothing sent externally
+- **No persistent data**: Results deleted after scan unless explicitly saved
+- **Medical-compliant**: Safe for HIPAA and other compliance requirements
+- **No installation**: Portable .exe doesn't modify system files
+
+## How It Works
+
+1. **Network Discovery**: Pings subnets to find active hosts
+2. **Switch Identification**: Attempts SSH/SNMP to identify switch type
+3. **Data Collection**:
+   - Queries switch MAC tables
+   - Retrieves VLAN information
+   - Gets port status and configuration
+4. **Display**: Shows results as:
+   - Network topology map
+   - Interactive device table (searchable)
+   - Export-ready JSON data
 
 ## Troubleshooting
 
-**No switches found?**
-- Check subnets are correct
-- Verify switches are reachable (ping them first)
-- Try with credentials if SNMP not enabled
+### No switches found
+- Verify subnets are correct
+- Check firewall isn't blocking ICMP (ping)
+- Try providing SSH credentials for manual queries
 
-**Credentials not working?**
-- Confirm switch accepts SSH connections
-- Check username/password are correct
-- Some switches may require specific auth methods
+### "Connection refused" on UniFi
+- Confirm controller IP is correct
+- Check controller port 8443 is accessible
+- Verify credentials are correct
 
-**Performance issues?**
+### SSH timeouts on Aruba/HP
+- Ensure SSH is enabled on switch
+- Check SSH port is 22 (non-standard not supported)
+- Confirm credentials allow CLI access
+
+### Credential errors
+- Credentials are encrypted locally - can't be recovered if lost
+- Re-enter credentials if needed
+- Click "Save Configuration" to persist settings
+
+### Performance issues
 - Reduce number of subnets per scan
-- Check network connectivity to switches
-- Close other browser tabs
+- Large subnets (/20 and larger) may timeout
+- Try smaller ranges if needed
 
 ## Architecture
 
 ```
 NetScanner/
-├── main.py                 # Entry point
+├── main.py                      # Entry point
 ├── app/
-│   ├── network_discovery.py   # Subnet scanning & host discovery
-│   ├── drivers/               # Switch drivers
-│   │   ├── base.py
-│   │   ├── unifi.py
-│   │   ├── aruba.py
-│   │   └── hp.py
-│   ├── web_ui.py             # Flask backend
-│   ├── config.py             # Configuration management
-│   └── security.py           # Credential encryption
-├── templates/index.html      # Web UI
+│   ├── network_discovery.py     # Subnet scanning, host detection
+│   ├── drivers/                 # Switch drivers
+│   │   ├── base.py              # Base driver class
+│   │   ├── unifi.py             # UniFi driver (API-based)
+│   │   ├── aruba.py             # Aruba driver (SSH-based)
+│   │   └── hp.py                # HP driver (SSH-based)
+│   ├── web_ui.py                # Flask backend
+│   ├── config.py                # Configuration management
+│   └── security.py              # Credential encryption
+├── templates/index.html         # Web UI
 ├── static/
-│   ├── app.js               # Frontend logic
-│   └── style.css            # Styling
-└── requirements.txt         # Python dependencies
+│   ├── app.js                   # Frontend logic
+│   └── style.css                # Styling
+├── requirements.txt             # Python dependencies
+└── build.spec                   # PyInstaller config
+```
+
+## Data Flow
+
+```
+┌─────────┐
+│ Browser │ (http://localhost:5000)
+└────┬────┘
+     │
+┌────▼──────┐
+│ Flask App │ (Web UI + API)
+└────┬──────┘
+     │
+┌────▼──────────────────┐
+│ Network Discovery     │ (Ping sweep)
+│ Switch Identification │ (SSH/SNMP banner grab)
+└────┬──────────────────┘
+     │
+┌────▼────────────────────────────────┐
+│ Switch Drivers                      │
+├─────────────────────────────────────┤
+│ UniFi API      │ Aruba SSH  │ HP SSH │
+└────┬───────────┴────────────┴────────┘
+     │
+     ▼
+┌──────────────────────┐
+│ Results & Analysis   │
+│ (MAC tables, VLANs)  │
+└──────────────────────┘
 ```
 
 ## Contributing
 
-Found a bug or want to add support for another switch brand? Submit a PR!
+Found a bug or want to add support for another switch brand? Submit a PR or issue!
 
 ## License
 
 See LICENSE file
+
+## FAQ
+
+**Q: Can I scan multiple networks at once?**
+A: Yes - enter multiple subnets separated by commas (e.g., `192.168.1.0/24, 10.0.0.0/24`)
+
+**Q: How long does a scan take?**
+A: Typically 2-10 minutes depending on network size and responsiveness of switches
+
+**Q: Will it work without credentials?**
+A: Yes, but limited. Auto-discovery will identify switches, but you won't get MAC tables without SSH/API access
+
+**Q: Is the web interface secure?**
+A: It runs on localhost only - not exposed to network. Credentials are encrypted locally.
+
+**Q: Can I schedule scans automatically?**
+A: Not built-in, but you can script the execution and API calls
+
+**Q: What if a switch times out?**
+A: Scan will skip it and continue with others. Retry with smaller subnets if needed.
