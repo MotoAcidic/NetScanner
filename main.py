@@ -2,6 +2,10 @@
 import os
 import sys
 import io
+import logging
+
+# Set up logging
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
 # Fix encoding issues on Windows
 if sys.platform == 'win32':
@@ -29,14 +33,18 @@ def start_browser():
 def main():
     """Main entry point"""
     app = create_app()
+    app.logger.setLevel(logging.DEBUG)
 
-    # Start browser in background thread
-    browser_thread = Thread(target=start_browser, daemon=True)
-    browser_thread.start()
-
-    # Run Flask app
     print("Network Scanner starting on http://localhost:5000")
-    app.run(host='localhost', port=5000, debug=False)
+    # Note: Auto-opening browser disabled due to environment issues
+    # Open manually at http://localhost:5000
+
+    try:
+        from waitress import serve
+        serve(app, host='localhost', port=5000)
+    except ImportError:
+        print("Waitress not available, using Flask development server")
+        app.run(host='localhost', port=5000, debug=False)
 
 if __name__ == '__main__':
     main()
