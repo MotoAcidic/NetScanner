@@ -121,27 +121,34 @@ const API={async getConfig(){return(await fetch('/api/config')).json()},async sa
             return jsonify({'error': 'No subnets provided'}), 400
 
         scan_progress['status'] = 'scanning'
-        scan_progress['message'] = 'Starting scan...'
+        scan_progress['message'] = 'Starting passive network scan...'
         scan_progress['switches'] = []
 
         def run_scan():
             try:
                 update_progress(f"Scanning subnets: {', '.join(subnets)}")
+                update_progress("Using passive discovery - NO credentials needed, NO config changes possible")
+
                 switches = scanner.scan_network(subnets, update_progress)
 
                 scan_progress['switches'] = switches
-                update_progress(f"Found {len(switches)} switches")
+                update_progress(f"Found {len(switches)} potential network devices")
+                update_progress(f"Discovered {len(scanner.arp_table)} active MAC addresses on network")
 
-                # Query each switch
+                # If credentials provided, optionally query switches
                 config = load_config()
+                creds_available = 'unifi' in config.get('credentials', {}) or \
+                                'aruba' in config.get('credentials', {}) or \
+                                'hp' in config.get('credentials', {})
 
-                for switch in switches:
-                    update_progress(f"Querying {switch['ip']} ({switch['type']})")
-
-                    try:
-                        if switch['type'] == 'unifi':
-                            unifi_creds = config.get('credentials', {}).get('unifi')
-                            if unifi_creds:
+                if creds_available:
+                    update_progress("Optional: Credentials available for additional details")
+                    # Query switches if credentials provided
+                    for switch in switches:
+                        update_progress(f"Attempting to query {switch['ip']} (optional)...")
+                        try:
+                            if 'unifi' in config.get('credentials', {}):
+                                unifi_creds = config['credentials']['unifi']
                                 decrypted = decrypt_credentials(unifi_creds['encrypted'])
                                 driver = UniFiDriver(unifi_creds['ip'], decrypted['username'], decrypted['password'])
                                 if driver.connect():
@@ -149,9 +156,8 @@ const API={async getConfig(){return(await fetch('/api/config')).json()},async sa
                                     switch['vlans'] = driver.get_vlans()
                                     driver.disconnect()
 
-                        elif switch['type'] == 'aruba':
-                            aruba_creds = config.get('credentials', {}).get('aruba')
-                            if aruba_creds:
+                            elif 'aruba' in config.get('credentials', {}):
+                                aruba_creds = config['credentials']['aruba']
                                 decrypted = decrypt_credentials(aruba_creds['encrypted'])
                                 driver = ArubaDriver(switch['ip'], decrypted['username'], decrypted['password'])
                                 if driver.connect():
@@ -159,20 +165,19 @@ const API={async getConfig(){return(await fetch('/api/config')).json()},async sa
                                     switch['vlans'] = driver.get_vlans()
                                     driver.disconnect()
 
-                        elif switch['type'] == 'hp':
-                            hp_creds = config.get('credentials', {}).get('hp')
-                            if hp_creds:
+                            elif 'hp' in config.get('credentials', {}):
+                                hp_creds = config['credentials']['hp']
                                 decrypted = decrypt_credentials(hp_creds['encrypted'])
                                 driver = HPDriver(switch['ip'], decrypted['username'], decrypted['password'])
                                 if driver.connect():
                                     switch['mac_table'] = driver.get_mac_table()
                                     switch['vlans'] = driver.get_vlans()
                                     driver.disconnect()
-                    except Exception as e:
-                        update_progress(f"Error querying {switch['ip']}: {e}")
+                        except Exception as e:
+                            update_progress(f"Optional query failed for {switch['ip']}: {e}")
 
                 scan_progress['status'] = 'complete'
-                update_progress('Scan complete!')
+                update_progress('Scan complete! No switches were modified.')
 
                 # Save to history
                 add_scan_to_history({
