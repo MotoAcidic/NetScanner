@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Network Scanner</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🔍 Network Scanner</h1>
+            <p>Scan and map your network switches and devices</p>
+        </header>
+
+        <div class="main-content">
+            <!-- Configuration Panel -->
+            <section class="panel config-panel">
+                <h2>Configuration</h2>
+
+                <div class="form-group">
+                    <label>Network Subnets (comma-separated)</label>
+                    <textarea id="subnets" placeholder="192.168.1.0/24, 10.0.0.0/24" rows="3"></textarea>
+                </div>
+
+                <h3>Optional Credentials</h3>
+
+                <div class="credential-section">
+                    <h4>UniFi Controller</h4>
+                    <div class="form-group">
+                        <label>Controller IP</label>
+                        <input type="text" id="unifi_ip" placeholder="192.168.1.1">
+                    </div>
+                    <div class="form-group">
+                        <label>Username</label>
+                        <input type="text" id="unifi_username" placeholder="admin">
+                    </div>
+                    <div class="form-group">
+                        <label>Password</label>
+                        <input type="password" id="unifi_password">
+                    </div>
+                </div>
+
+                <div class="credential-section">
+                    <h4>Aruba Switches</h4>
+                    <div class="form-group">
+                        <label>Username</label>
+                        <input type="text" id="aruba_username" placeholder="admin">
+                    </div>
+                    <div class="form-group">
+                        <label>Password</label>
+                        <input type="password" id="aruba_password">
+                    </div>
+                </div>
+
+                <div class="credential-section">
+                    <h4>HP Switches</h4>
+                    <div class="form-group">
+                        <label>Username</label>
+                        <input type="text" id="hp_username" placeholder="admin">
+                    </div>
+                    <div class="form-group">
+                        <label>Password</label>
+                        <input type="password" id="hp_password">
+                    </div>
+                </div>
+
+                <div class="button-group">
+                    <button id="saveConfig" class="btn btn-secondary">Save Configuration</button>
+                    <button id="startScan" class="btn btn-primary">Start Scan</button>
+                </div>
+            </section>
+
+            <!-- Progress Panel -->
+            <section class="panel progress-panel">
+                <h2>Scan Progress</h2>
+                <div id="progressStatus" class="progress-status">Idle</div>
+                <div id="progressLog" class="progress-log"></div>
+            </section>
+
+            <!-- Results Panel -->
+            <section class="panel results-panel">
+                <h2>Network Map</h2>
+                <div id="networkMap" class="network-map"></div>
+
+                <h2>Devices</h2>
+                <div class="search-box">
+                    <input type="text" id="deviceSearch" placeholder="Search by MAC, IP, or port...">
+                </div>
+                <table id="deviceTable" class="device-table">
+                    <thead>
+                        <tr>
+                            <th>Switch IP</th>
+                            <th>Port</th>
+                            <th>MAC Address</th>
+                            <th>VLAN</th>
+                            <th>Status</th>
+                            <th>Speed</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </section>
+        </div>
+    </div>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>
