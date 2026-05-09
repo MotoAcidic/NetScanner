@@ -42,4 +42,7 @@ Thumbs.db
 *.sqlite
 dist/
 build/
-*.spec
+NetScanner.spec
+
+# Portable bundle binaries (rebuilt locally)
+portable/nodejs/

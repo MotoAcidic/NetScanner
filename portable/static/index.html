@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NetScanner — Network Operations Console</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<div class="app">
+
+    <!-- ========== TOP BAR ========== -->
+    <header class="topbar">
+        <div class="brand">
+            <div class="brand-mark">NS</div>
+            <div>
+                <div class="brand-title">NetScanner</div>
+                <div class="brand-sub">Network Operations Console</div>
+            </div>
+        </div>
+
+        <nav class="nav">
+            <button class="nav-item active" data-view="dashboard">Dashboard</button>
+            <button class="nav-item" data-view="inventory">Inventory</button>
+            <button class="nav-item" data-view="topology">Topology</button>
+            <button class="nav-item" data-view="switches">Switch Detail</button>
+            <button class="nav-item" data-view="activity">Activity</button>
+        </nav>
+
+        <div class="topbar-right">
+            <div class="status-pill" id="statusPill">
+                <span class="status-dot"></span>
+                <span id="statusText">Idle</span>
+            </div>
+            <button id="startScan" class="btn btn-primary">Start Scan</button>
+        </div>
+    </header>
+
+    <!-- ========== HOST STRIP ========== -->
+    <section class="host-strip">
+        <div class="host-block">
+            <div class="host-label">Host Machine</div>
+            <div class="host-value" id="hostName">—</div>
+        </div>
+        <div class="host-block">
+            <div class="host-label">Local IP</div>
+            <div class="host-value mono" id="hostIP">—</div>
+        </div>
+        <div class="host-block">
+            <div class="host-label">Subnet</div>
+            <div class="host-value mono" id="hostSubnet">—</div>
+        </div>
+        <div class="host-block">
+            <div class="host-label">Last Scan</div>
+            <div class="host-value" id="lastScan">Never</div>
+        </div>
+        <div class="host-block grow">
+            <div class="host-label">Active Subnets</div>
+            <div class="subnet-input-wrap">
+                <input type="text" id="subnets" class="inline-input mono" placeholder="192.168.1.0/24, 10.0.0.0/24">
+                <button id="useHostSubnet" class="ghost-btn" title="Use host subnet">Use Host</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- ========== MAIN ========== -->
+    <main class="main">
+
+        <!-- ===== DASHBOARD VIEW ===== -->
+        <section class="view active" data-view="dashboard">
+            <div class="grid-12">
+                <!-- KPI cards -->
+                <div class="kpi card span-3">
+                    <div class="kpi-label">Hosts Online</div>
+                    <div class="kpi-value" id="kpiHosts">0</div>
+                    <div class="kpi-sub">Discovered via ARP / ping</div>
+                </div>
+                <div class="kpi card span-3 accent-purple">
+                    <div class="kpi-label">Network Devices</div>
+                    <div class="kpi-value" id="kpiInfra">0</div>
+                    <div class="kpi-sub">Switches · Routers · APs</div>
+                </div>
+                <div class="kpi card span-3 accent-teal">
+                    <div class="kpi-label">Endpoints</div>
+                    <div class="kpi-value" id="kpiEndpoints">0</div>
+                    <div class="kpi-sub">Servers · Computers · Phones · IoT</div>
+                </div>
+                <div class="kpi card span-3 accent-warn">
+                    <div class="kpi-label">MAC Bindings</div>
+                    <div class="kpi-value" id="kpiMacs">0</div>
+                    <div class="kpi-sub">Switch port mappings</div>
+                </div>
+
+                <!-- Topology preview -->
+                <div class="card span-8">
+                    <div class="card-head">
+                        <div>
+                            <div class="card-title">Network Topology</div>
+                            <div class="card-sub">Hierarchical view of discovered infrastructure</div>
+                        </div>
+                        <button class="ghost-btn" data-view-link="topology">Open full view →</button>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="topology-mini">
+                            <svg id="topoMini" class="topo-svg" preserveAspectRatio="xMidYMid meet"></svg>
+                            <div class="empty-state" id="topoMiniEmpty">Run a scan to render the topology.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Composition / breakdown -->
+                <div class="card span-4">
+                    <div class="card-head">
+                        <div>
+                            <div class="card-title">Device Composition</div>
+                            <div class="card-sub">Breakdown by classification</div>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div id="compositionList" class="composition"></div>
+                    </div>
+                </div>
+
+                <!-- Configuration / credentials -->
+                <div class="card span-6">
+                    <div class="card-head">
+                        <div>
+                            <div class="card-title">Scan Configuration</div>
+                            <div class="card-sub">Optional credentials enable deep switch interrogation</div>
+                        </div>
+                        <button id="saveConfig" class="ghost-btn">Save</button>
+                    </div>
+                    <div class="card-body">
+                        <div class="cred-grid">
+                            <div class="cred-card">
+                                <div class="cred-title">UniFi Controller</div>
+                                <div class="form-row">
+                                    <input type="text" id="unifi_ip" placeholder="Controller IP">
+                                </div>
+                                <div class="form-row two">
+                                    <input type="text" id="unifi_username" placeholder="Username">
+                                    <input type="password" id="unifi_password" placeholder="Password">
+                                </div>
+                            </div>
+                            <div class="cred-card">
+                                <div class="cred-title">Aruba</div>
+                                <div class="form-row two">
+                                    <input type="text" id="aruba_username" placeholder="Username">
+                                    <input type="password" id="aruba_password" placeholder="Password">
+                                </div>
+                            </div>
+                            <div class="cred-card">
+                                <div class="cred-title">HP / Aruba CX</div>
+                                <div class="form-row two">
+                                    <input type="text" id="hp_username" placeholder="Username">
+                                    <input type="password" id="hp_password" placeholder="Password">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent activity -->
+                <div class="card span-6">
+                    <div class="card-head">
+                        <div>
+                            <div class="card-title">Recent Activity</div>
+                            <div class="card-sub">Live scan log</div>
+                        </div>
+                        <button class="ghost-btn" data-view-link="activity">Full log →</button>
+                    </div>
+                    <div class="card-body p-0">
+                        <div id="dashLog" class="log compact"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ===== INVENTORY VIEW ===== -->
+        <section class="view" data-view="inventory">
+            <div class="card">
+                <div class="card-head">
+                    <div>
+                        <div class="card-title">Device Inventory</div>
+                        <div class="card-sub" id="inventoryCount">0 devices</div>
+                    </div>
+                    <div class="search-box">
+                        <input type="text" id="inventorySearch" placeholder="Search IP, MAC, vendor, hostname...">
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <div class="filter-strip">
+                        <div class="chips" id="typeFilters">
+                            <button class="chip active" data-type="all">All</button>
+                            <button class="chip" data-type="router">Routers / Gateways</button>
+                            <button class="chip" data-type="switch">Switches</button>
+                            <button class="chip" data-type="ap">Access Points</button>
+                            <button class="chip" data-type="server">Servers</button>
+                            <button class="chip" data-type="computer">Computers</button>
+                            <button class="chip" data-type="printer">Printers</button>
+                            <button class="chip" data-type="phone">VoIP / Mobile</button>
+                            <button class="chip" data-type="iot">IoT</button>
+                            <button class="chip" data-type="unknown">Unknown</button>
+                        </div>
+                    </div>
+                    <div class="table-wrap">
+                        <table class="data-table" id="inventoryTable">
+                            <thead>
+                                <tr>
+                                    <th>Type</th>
+                                    <th>IP Address</th>
+                                    <th>MAC Address</th>
+                                    <th>Vendor</th>
+                                    <th>Hostname</th>
+                                    <th>Source</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ===== TOPOLOGY VIEW ===== -->
+        <section class="view" data-view="topology">
+            <div class="card topology-card">
+                <div class="card-head">
+                    <div>
+                        <div class="card-title">Network Topology</div>
+                        <div class="card-sub" id="topoSummary">No data yet</div>
+                    </div>
+                    <div class="topo-controls">
+                        <div class="legend">
+                            <span class="legend-item"><i class="dot t-router"></i>Router</span>
+                            <span class="legend-item"><i class="dot t-switch"></i>Switch</span>
+                            <span class="legend-item"><i class="dot t-ap"></i>AP</span>
+                            <span class="legend-item"><i class="dot t-server"></i>Server</span>
+                            <span class="legend-item"><i class="dot t-computer"></i>Computer</span>
+                            <span class="legend-item"><i class="dot t-printer"></i>Printer</span>
+                            <span class="legend-item"><i class="dot t-phone"></i>Phone</span>
+                            <span class="legend-item"><i class="dot t-iot"></i>IoT</span>
+                        </div>
+                        <button class="ghost-btn" id="topoZoomOut">−</button>
+                        <button class="ghost-btn" id="topoZoomIn">+</button>
+                        <button class="ghost-btn" id="topoReset">Reset</button>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <div class="topo-stage">
+                        <div class="topo-canvas-wrap" id="topoCanvasWrap">
+                            <svg id="topoFull" class="topo-svg" preserveAspectRatio="xMidYMid meet"></svg>
+                            <div class="empty-state large" id="topoFullEmpty">Run a scan to render the topology.</div>
+                        </div>
+                        <aside class="topo-detail" id="topoDetail">
+                            <div class="topo-detail-header">
+                                <div class="topo-detail-title">Device Details</div>
+                                <button class="ghost-btn" id="topoCloseDetail">Close</button>
+                            </div>
+                            <div class="topo-detail-body" id="topoDetailBody">
+                                <div class="empty-state">Select a node to inspect.</div>
+                            </div>
+                        </aside>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ===== SWITCH DETAIL VIEW ===== -->
+        <section class="view" data-view="switches">
+            <div class="card">
+                <div class="card-head">
+                    <div>
+                        <div class="card-title">Switch MAC / Port Bindings</div>
+                        <div class="card-sub" id="macCount">0 entries</div>
+                    </div>
+                    <div class="search-box">
+                        <input type="text" id="deviceSearch" placeholder="Search MAC, IP, port, VLAN...">
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-wrap">
+                        <table class="data-table" id="deviceTable">
+                            <thead>
+                                <tr>
+                                    <th>Switch IP</th>
+                                    <th>Port</th>
+                                    <th>MAC Address</th>
+                                    <th>VLAN</th>
+                                    <th>Status</th>
+                                    <th>Speed</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ===== ACTIVITY VIEW ===== -->
+        <section class="view" data-view="activity">
+            <div class="card">
+                <div class="card-head">
+                    <div>
+                        <div class="card-title">Scan Activity Log</div>
+                        <div class="card-sub" id="logCount">0 events</div>
+                    </div>
+                    <button id="clearLog" class="ghost-btn">Clear</button>
+                </div>
+                <div class="card-body p-0">
+                    <div id="progressLog" class="log"></div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="footer">
+        <span>NetScanner</span>
+        <span class="sep">·</span>
+        <span>Read-only passive discovery</span>
+        <span class="sep">·</span>
+        <span id="footerYear"></span>
+    </footer>
+</div>
+
+<script src="/static/app.js"></script>
+</body>
+</html>

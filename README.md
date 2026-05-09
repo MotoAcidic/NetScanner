@@ -57,7 +57,7 @@ python main.py
 pip install pyinstaller
 
 # Build the executable
-pyinstaller build.spec
+python build.py
 
 # Output: dist/NetScanner.exe (ready to deploy)
 ```
@@ -139,28 +139,32 @@ pyinstaller build.spec
 - Large subnets (/20 and larger) may timeout
 - Try smaller ranges if needed
 
-## Architecture
+## Project Layout
 
 ```
 NetScanner/
-├── main.py                      # Entry point
-├── app/
-│   ├── network_discovery.py     # Subnet scanning, host detection
-│   ├── drivers/                 # Switch drivers
-│   │   ├── base.py              # Base driver class
-│   │   ├── unifi.py             # UniFi driver (API-based)
-│   │   ├── aruba.py             # Aruba driver (SSH-based)
-│   │   └── hp.py                # HP driver (SSH-based)
-│   ├── web_ui.py                # Flask backend
-│   ├── config.py                # Configuration management
-│   └── security.py              # Credential encryption
-├── templates/index.html         # Web UI
-├── static/
-│   ├── app.js                   # Frontend logic
-│   └── style.css                # Styling
-├── requirements.txt             # Python dependencies
-└── build.spec                   # PyInstaller config
+├── main.py                  # Entry point (launches API + UI server)
+├── ui-server.js             # Node.js UI server
+├── build.py                 # PyInstaller build script
+├── NetScanner.spec          # Generated PyInstaller spec
+├── RUN.bat                  # Windows launcher
+├── requirements.txt         # Python dependencies
+├── app/                     # Python backend
+│   ├── web_ui.py            # Flask API
+│   ├── config.py            # Configuration / persistence
+│   ├── security.py          # Credential encryption
+│   ├── network_discovery.py # Subnet scanning & host detection
+│   └── drivers/             # Switch drivers (base / unifi / aruba / hp)
+├── static/                  # Web UI assets (index.html, app.js, style.css)
+├── docs/                    # Extended docs (quickstart, deployment, etc.)
+└── portable/                # Self-contained portable bundle (incl. Node.js)
 ```
+
+Additional documentation lives in [docs/](docs/):
+- [Getting Started](docs/GETTING_STARTED.md)
+- [Quickstart](docs/QUICKSTART.md)
+- [Deployment](docs/DEPLOYMENT.md)
+- [Safe Mode](docs/SAFE_MODE.md)
 
 ## Data Flow
 

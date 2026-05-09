@@ -632,6 +632,7 @@ document.addEventListener('DOMContentLoaded', () => { loadMachineInfo(); loadCon
 
     @app.route('/api/machine-info', methods=['GET'])
     def machine_info():
+        print("[DEBUG] machine_info route called!")
         return jsonify(get_machine_info())
 
     @app.route('/api/config', methods=['GET', 'POST'])

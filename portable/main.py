@@ -45,6 +45,7 @@ print("      [OK]\n")
 print("[1/2] Starting Python API server...")
 try:
     from app.web_ui import create_app
+    print(f"      [DEBUG] create_app imported from: {create_app.__module__}")
     from threading import Thread
     from waitress import serve
 

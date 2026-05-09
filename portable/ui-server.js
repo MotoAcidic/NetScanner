@@ -411,9 +411,9 @@ const server = http.createServer((req, res) => {
         return;
     }
 
-    // Root - serve HTML
+    // Root - proxy to Flask API
     if (req.url === '/' || req.url === '/index.html') {
-        proxyToAPI("/", req.method, "", res);
+        proxyToAPI('/', req.method, '', res);
         return;
     }
 

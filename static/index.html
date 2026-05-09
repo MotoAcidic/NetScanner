@@ -3,105 +3,233 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Network Scanner</title>
+    <title>NetScanner — Network Discovery Console</title>
     <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>🔍 Network Scanner</h1>
-            <p>Scan and map your network switches and devices</p>
+    <div class="app-shell">
+        <header class="topbar">
+            <div class="brand">
+                <div class="brand-mark">NS</div>
+                <div class="brand-text">
+                    <div class="brand-title">NetScanner</div>
+                    <div class="brand-sub">Network Discovery &amp; Asset Console</div>
+                </div>
+            </div>
+            <div class="topbar-meta">
+                <div class="status-pill" id="statusPill">
+                    <span class="status-dot"></span>
+                    <span id="statusText">Idle</span>
+                </div>
+                <div class="meta-block">
+                    <div class="meta-label">Last Scan</div>
+                    <div class="meta-value" id="lastScan">—</div>
+                </div>
+            </div>
         </header>
 
-        <div class="main-content">
-            <!-- Configuration Panel -->
-            <section class="panel config-panel">
-                <h2>Configuration</h2>
+        <main class="layout">
+            <aside class="col col-left">
+                <section class="card">
+                    <div class="card-header">
+                        <h2>Scan Configuration</h2>
+                        <span class="card-tag">Required</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="form-group">
+                            <label>Network Subnets <span class="hint">(comma separated, CIDR)</span></label>
+                            <textarea id="subnets" placeholder="192.168.1.0/24, 10.0.0.0/24" rows="3"></textarea>
+                        </div>
+                    </div>
+                </section>
 
-                <div class="form-group">
-                    <label>Network Subnets (comma-separated)</label>
-                    <textarea id="subnets" placeholder="192.168.1.0/24, 10.0.0.0/24" rows="3"></textarea>
-                </div>
+                <section class="card">
+                    <div class="card-header">
+                        <h2>Optional Credentials</h2>
+                        <span class="card-tag muted">Switch interrogation</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="cred-block">
+                            <h4>UniFi Controller</h4>
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label>Controller IP</label>
+                                    <input type="text" id="unifi_ip" placeholder="192.168.1.1">
+                                </div>
+                                <div class="form-group">
+                                    <label>Username</label>
+                                    <input type="text" id="unifi_username" placeholder="admin">
+                                </div>
+                                <div class="form-group span-2">
+                                    <label>Password</label>
+                                    <input type="password" id="unifi_password">
+                                </div>
+                            </div>
+                        </div>
 
-                <h3>Optional Credentials</h3>
+                        <div class="cred-block">
+                            <h4>Aruba Switches</h4>
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label>Username</label>
+                                    <input type="text" id="aruba_username" placeholder="admin">
+                                </div>
+                                <div class="form-group">
+                                    <label>Password</label>
+                                    <input type="password" id="aruba_password">
+                                </div>
+                            </div>
+                        </div>
 
-                <div class="credential-section">
-                    <h4>UniFi Controller</h4>
-                    <div class="form-group">
-                        <label>Controller IP</label>
-                        <input type="text" id="unifi_ip" placeholder="192.168.1.1">
+                        <div class="cred-block">
+                            <h4>HP / Aruba CX</h4>
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label>Username</label>
+                                    <input type="text" id="hp_username" placeholder="admin">
+                                </div>
+                                <div class="form-group">
+                                    <label>Password</label>
+                                    <input type="password" id="hp_password">
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    <div class="form-group">
-                        <label>Username</label>
-                        <input type="text" id="unifi_username" placeholder="admin">
-                    </div>
-                    <div class="form-group">
-                        <label>Password</label>
-                        <input type="password" id="unifi_password">
-                    </div>
-                </div>
+                </section>
 
-                <div class="credential-section">
-                    <h4>Aruba Switches</h4>
-                    <div class="form-group">
-                        <label>Username</label>
-                        <input type="text" id="aruba_username" placeholder="admin">
-                    </div>
-                    <div class="form-group">
-                        <label>Password</label>
-                        <input type="password" id="aruba_password">
-                    </div>
-                </div>
-
-                <div class="credential-section">
-                    <h4>HP Switches</h4>
-                    <div class="form-group">
-                        <label>Username</label>
-                        <input type="text" id="hp_username" placeholder="admin">
-                    </div>
-                    <div class="form-group">
-                        <label>Password</label>
-                        <input type="password" id="hp_password">
-                    </div>
-                </div>
-
-                <div class="button-group">
+                <div class="action-row">
                     <button id="saveConfig" class="btn btn-secondary">Save Configuration</button>
                     <button id="startScan" class="btn btn-primary">Start Scan</button>
                 </div>
-            </section>
+            </aside>
 
-            <!-- Progress Panel -->
-            <section class="panel progress-panel">
-                <h2>Scan Progress</h2>
-                <div id="progressStatus" class="progress-status">Idle</div>
-                <div id="progressLog" class="progress-log"></div>
-            </section>
-
-            <!-- Results Panel -->
-            <section class="panel results-panel">
-                <h2>Network Map</h2>
-                <div id="networkMap" class="network-map"></div>
-
-                <h2>Devices</h2>
-                <div class="search-box">
-                    <input type="text" id="deviceSearch" placeholder="Search by MAC, IP, or port...">
+            <section class="col col-right">
+                <div class="kpi-row">
+                    <div class="kpi">
+                        <div class="kpi-label">Hosts Discovered</div>
+                        <div class="kpi-value" id="kpiHosts">0</div>
+                    </div>
+                    <div class="kpi">
+                        <div class="kpi-label">Network Devices</div>
+                        <div class="kpi-value" id="kpiSwitches">0</div>
+                    </div>
+                    <div class="kpi">
+                        <div class="kpi-label">Endpoints</div>
+                        <div class="kpi-value" id="kpiEndpoints">0</div>
+                    </div>
+                    <div class="kpi">
+                        <div class="kpi-label">MAC Entries</div>
+                        <div class="kpi-value" id="kpiMacs">0</div>
+                    </div>
                 </div>
-                <table id="deviceTable" class="device-table">
-                    <thead>
-                        <tr>
-                            <th>Switch IP</th>
-                            <th>Port</th>
-                            <th>MAC Address</th>
-                            <th>VLAN</th>
-                            <th>Status</th>
-                            <th>Speed</th>
-                        </tr>
-                    </thead>
-                    <tbody></tbody>
-                </table>
+
+                <div class="tabs">
+                    <button class="tab active" data-tab="map">Network Map</button>
+                    <button class="tab" data-tab="inventory">Device Inventory</button>
+                    <button class="tab" data-tab="mac">MAC / Port Table</button>
+                    <button class="tab" data-tab="activity">Activity Log</button>
+                </div>
+
+                <section class="card tab-panel active" data-panel="map">
+                    <div class="card-header">
+                        <h2>Network Topology</h2>
+                        <span class="card-tag muted" id="mapCount">0 nodes</span>
+                    </div>
+                    <div class="card-body">
+                        <div id="networkMap" class="network-map">
+                            <div class="empty-state">Run a scan to populate the topology view.</div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="card tab-panel" data-panel="inventory">
+                    <div class="card-header">
+                        <h2>Device Inventory</h2>
+                        <span class="card-tag muted" id="inventoryCount">0 devices</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="filter-bar">
+                            <div class="filter-chips" id="typeFilters">
+                                <button class="chip active" data-type="all">All</button>
+                                <button class="chip" data-type="switch">Switches</button>
+                                <button class="chip" data-type="router">Routers / Gateways</button>
+                                <button class="chip" data-type="ap">Access Points</button>
+                                <button class="chip" data-type="server">Servers</button>
+                                <button class="chip" data-type="computer">Computers</button>
+                                <button class="chip" data-type="printer">Printers</button>
+                                <button class="chip" data-type="phone">VoIP / Mobile</button>
+                                <button class="chip" data-type="iot">IoT / Other</button>
+                                <button class="chip" data-type="unknown">Unknown</button>
+                            </div>
+                            <div class="search-box">
+                                <input type="text" id="inventorySearch" placeholder="Search IP, MAC, vendor, hostname...">
+                            </div>
+                        </div>
+                        <div class="table-wrap">
+                            <table class="data-table" id="inventoryTable">
+                                <thead>
+                                    <tr>
+                                        <th>Type</th>
+                                        <th>IP Address</th>
+                                        <th>MAC Address</th>
+                                        <th>Vendor</th>
+                                        <th>Hostname</th>
+                                        <th>Source</th>
+                                        <th>Notes</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="card tab-panel" data-panel="mac">
+                    <div class="card-header">
+                        <h2>Switch MAC / Port Bindings</h2>
+                        <span class="card-tag muted" id="macCount">0 entries</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="filter-bar">
+                            <div class="search-box wide">
+                                <input type="text" id="deviceSearch" placeholder="Search by MAC, IP, port, or VLAN...">
+                            </div>
+                        </div>
+                        <div class="table-wrap">
+                            <table class="data-table" id="deviceTable">
+                                <thead>
+                                    <tr>
+                                        <th>Switch IP</th>
+                                        <th>Port</th>
+                                        <th>MAC Address</th>
+                                        <th>VLAN</th>
+                                        <th>Status</th>
+                                        <th>Speed</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="card tab-panel" data-panel="activity">
+                    <div class="card-header">
+                        <h2>Scan Activity</h2>
+                        <span class="card-tag muted" id="logCount">0 events</span>
+                    </div>
+                    <div class="card-body">
+                        <div id="progressLog" class="progress-log"></div>
+                    </div>
+                </section>
             </section>
-        </div>
+        </main>
+
+        <footer class="footer">
+            <span>NetScanner &copy; <span id="year"></span></span>
+            <span class="footer-sep">•</span>
+            <span>Read-only passive discovery</span>
+        </footer>
     </div>
 
     <script src="/static/app.js"></script>
