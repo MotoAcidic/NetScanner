@@ -21,6 +21,14 @@ def create_app():
     app = Flask(__name__, template_folder=template_folder, static_folder=static_folder)
     CORS(app)
 
+    # Add error handler for all exceptions
+    @app.errorhandler(Exception)
+    def handle_error(error):
+        print(f"ERROR: {error}", flush=True)
+        import traceback
+        traceback.print_exc()
+        return f"Error: {str(error)}", 500
+
     scanner = NetworkScanner()
     scan_thread = None
     scan_progress = {'status': 'idle', 'message': '', 'switches': []}
@@ -31,7 +39,9 @@ def create_app():
 
     @app.route('/')
     def index():
-        return render_template('index.html')
+        from flask import send_file
+        html_path = os.path.join(app.template_folder, 'index.html')
+        return send_file(html_path, mimetype='text/html')
 
     @app.route('/api/config', methods=['GET', 'POST'])
     def config():
